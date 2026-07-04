@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>SoundClick - Tactile Sound Fidget PWA</title>
+  
+  <!-- SEO & PWA Meta -->
+  <meta name="description" content="SoundClick is a clean, tactile sound fidget toy that plays animal calls, chiptune synth sounds, and zen bell chimes with responsive lock-screen media widget controls.">
+  <meta name="theme-color" content="#8b5cf6">
+  <link rel="manifest" href="manifest.json">
+  
+  <!-- Apple Mobile Web App Settings -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SoundClick">
+  <link rel="apple-touch-icon" href="assets/icon.svg">
+  
+  <!-- Fonts & Stylesheet -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="index.css">
+</head>
+<body>
+
+  <!-- App Shell Container -->
+  <div class="app-container">
+    
+    <!-- PWA Install Banner -->
+    <div id="installBanner" class="install-banner hidden">
+      <div class="banner-content">
+        <img src="assets/fidget_logo.jpg" alt="SoundClick Logo" class="banner-logo">
+        <div class="banner-text">
+          <h3>Install SoundClick</h3>
+          <p>Play sounds directly from your home & lock screen!</p>
+        </div>
+      </div>
+      <button id="btnInstall" class="btn-install">Add to Home Screen</button>
+    </div>
+
+    <!-- Header Section -->
+    <header class="app-header">
+      <div class="logo-area">
+        <div class="logo-glow"></div>
+        <img src="assets/fidget_logo.jpg" alt="SoundClick Logo" class="header-logo">
+        <div class="title-meta">
+          <h1>SoundClick</h1>
+          <span class="badge">Tactile Fidget Toy</span>
+        </div>
+      </div>
+      <p class="tagline">Tap to play, morph, and fidget. Works from your phone's lock screen!</p>
+    </header>
+
+    <!-- Main Visual Fidget Area -->
+    <main class="fidget-core">
+      <!-- Radial Visualizer Ring -->
+      <div class="visualizer-wrapper">
+        <div class="visualizer-ring" id="visualizerRing"></div>
+        <div class="sound-wave-glow" id="soundWaveGlow"></div>
+        
+        <!-- The 3D Tactile Fidget Button -->
+        <button id="fidgetButton" class="fidget-button" aria-label="Trigger Sound">
+          <div class="button-bezel"></div>
+          <div class="button-cap">
+            <div class="cap-texture"></div>
+            <!-- Sound Icon -->
+            <svg class="sound-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M11 5L6 9H2V15H6L11 19V5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+              <path class="wave-line short" d="M15.54 8.46C16.4774 9.39766 17.0041 10.6692 17.0041 12C17.0041 13.3308 16.4774 14.6023 15.54 15.54" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <path class="wave-line long" d="M19.07 4.93C20.9447 6.80529 21.9979 9.34839 21.9979 12C21.9979 14.6516 20.9447 17.1947 19.07 19.07" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </button>
+      </div>
+
+      <!-- Active Track Display -->
+      <div class="active-sound-panel">
+        <div class="sound-info">
+          <span class="category-indicator" id="activeCategory">Animals</span>
+          <h2 id="activeSoundName">Cat Meow</h2>
+        </div>
+        <div class="tactile-feedback">
+          <label class="toggle-switch">
+            <input type="checkbox" id="hapticToggle" checked>
+            <span class="slider round"></span>
+          </label>
+          <span class="label-text">Haptics</span>
+        </div>
+      </div>
+    </main>
+
+    <!-- Sound Modulation Controls (Fidget Synth Sliders) -->
+    <section class="modulation-panel card" id="synthControls">
+      <h3>Sound Synthesizer Morphing</h3>
+      <div class="control-grid">
+        <div class="slider-control">
+          <div class="slider-label">
+            <span>Pitch / Frequency</span>
+            <span id="valPitch">440 Hz</span>
+          </div>
+          <input type="range" id="sliderPitch" min="80" max="2000" step="5" value="440">
+        </div>
+        <div class="slider-control">
+          <div class="slider-label">
+            <span>Filter Sweep / Resonance</span>
+            <span id="valResonance">1000 Hz</span>
+          </div>
+          <input type="range" id="sliderResonance" min="100" max="5000" step="10" value="1200">
+        </div>
+      </div>
+    </section>
+
+    <!-- Fidget App Settings / Lock Screen Helper -->
+    <section class="lockscreen-helper card">
+      <div class="helper-header">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" xmlns="http://www.w3.org/2000/svg">
+          <rect x="5" y="11" width="14" height="11" rx="2" ry="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+        <h3>Fidget Locked Phone Mode</h3>
+      </div>
+      <p>Enable background loop. Play an animal or synth sound, lock your phone, and a media widget will appear! Tapping play, next, or previous on the lock screen changes sounds instantly.</p>
+      
+      <div class="options-row">
+        <div class="option-item">
+          <label class="toggle-switch">
+            <input type="checkbox" id="loopToggle">
+            <span class="slider round"></span>
+          </label>
+          <span class="label-text">Repeat Sound</span>
+        </div>
+        
+        <div class="option-item">
+          <label class="toggle-switch">
+            <input type="checkbox" id="bgKeepAliveToggle">
+            <span class="slider round"></span>
+          </label>
+          <span class="label-text">Keep Lock Widget Active</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sound Packs Navigation -->
+    <nav class="sound-categories-nav">
+      <button class="nav-tab active" data-tab="animals">Animals</button>
+      <button class="nav-tab" data-tab="synth">Fidget Synth</button>
+      <button class="nav-tab" data-tab="zen">Zen Bowls</button>
+    </nav>
+
+    <!-- Sound Packs Content Grid -->
+    <section class="sounds-library">
+      
+      <!-- Animals Sound Pack (Wikimedia) -->
+      <div id="pack-animals" class="sound-pack-grid active">
+        <!-- Javascript dynamically inserts card templates here -->
+      </div>
+
+      <!-- Fidget Synth Sound Pack (Web Audio oscillator shapes) -->
+      <div id="pack-synth" class="sound-pack-grid">
+        <!-- Javascript dynamically inserts synth cards -->
+      </div>
+
+      <!-- Zen Sound Pack (Web Audio metallic resonances) -->
+      <div id="pack-zen" class="sound-pack-grid">
+        <!-- Javascript dynamically inserts zen cards -->
+      </div>
+
+    </section>
+
+    <!-- Footer Instructions -->
+    <footer class="app-footer">
+      <p>SoundClick v1.0.0 • No ads • Works Offline</p>
+    </footer>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
