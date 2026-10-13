@@ -5,7 +5,7 @@
 // App State
 const state = {
   activeTab: 'animals',
-  activeSoundId: 'cat',
+  activeSoundId: 'bird',
   isPlaying: false,
   hapticsEnabled: true,
   loopEnabled: false,
@@ -17,7 +17,9 @@ const state = {
   currentPitch: 440,
   currentResonance: 1200,
   fadeTimeout: null,
-  fadeInterval: null
+  fadeInterval: null,
+  playbackTimeout: null,
+  activeAudioNodes: new Set()
 };
 
 // Sound Databases
@@ -107,6 +109,14 @@ function getAudioContext() {
   return state.audioContext;
 }
 
+function trackAudioNode(node) {
+  state.activeAudioNodes.add(node);
+  node.addEventListener('ended', () => {
+    state.activeAudioNodes.delete(node);
+    node.disconnect();
+  }, { once: true });
+}
+
 // Preloaded Audio Objects cache for sound packs
 const audioCache = {};
 function preloadAudioAssets() {
@@ -157,6 +167,7 @@ function playChiptuneSynth(id, ctx) {
   const filter = ctx.createBiquadFilter();
   const gainNode = ctx.createGain();
 
+  trackAudioNode(osc);
   osc.connect(filter);
   filter.connect(gainNode);
   gainNode.connect(ctx.destination);
@@ -226,11 +237,9 @@ function playChiptuneSynth(id, ctx) {
   }
 
   // Handle visual effects timing
-  const duration = id === 'bass' ? 650 : id === 'coin' ? 300 : 350;
+  const duration = id === 'bass' ? 660 : id === 'coin' ? 310 : id === 'zap' ? 160 : 360;
   startVisualizerEffects();
-  setTimeout(() => {
-    if (!state.isPlaying) stopVisualizerEffects();
-  }, duration);
+  return duration;
 }
 
 // 2. Zen Bells & Bowls (Additive Harmonics Synthesizer)
@@ -255,6 +264,7 @@ function playZenSynth(id, ctx) {
       const osc = ctx.createOscillator();
       const nodeGain = ctx.createGain();
       
+      trackAudioNode(osc);
       osc.type = 'sine';
       // Add slight detune for richness
       osc.frequency.setValueAtTime(baseFreq * ratio + (Math.random() * 2 - 1), now);
@@ -269,7 +279,7 @@ function playZenSynth(id, ctx) {
       osc.stop(now + duration);
     });
 
-    setTimeout(() => stopVisualizerEffects(), duration * 1000);
+    return duration * 1000;
   } 
   else if (id === 'bell') {
     // High-pitched crystal bell sound
@@ -284,6 +294,7 @@ function playZenSynth(id, ctx) {
       const osc = ctx.createOscillator();
       const nodeGain = ctx.createGain();
       
+      trackAudioNode(osc);
       osc.type = 'sine';
       osc.frequency.setValueAtTime(baseFreq * 2.0 * ratio, now); // Shift register higher
       
@@ -297,7 +308,7 @@ function playZenSynth(id, ctx) {
       osc.stop(now + duration);
     });
 
-    setTimeout(() => stopVisualizerEffects(), duration * 1000);
+    return duration * 1000;
   } 
   else if (id === 'gong') {
     // Deep Zen Gong
@@ -314,6 +325,7 @@ function playZenSynth(id, ctx) {
       const osc = ctx.createOscillator();
       const nodeGain = ctx.createGain();
       
+      trackAudioNode(osc);
       osc.type = type;
       osc.frequency.setValueAtTime(freqs[index], now);
       
@@ -333,7 +345,7 @@ function playZenSynth(id, ctx) {
       osc.stop(now + duration);
     });
 
-    setTimeout(() => stopVisualizerEffects(), duration * 1000);
+    return duration * 1000;
   }
   else if (id === 'om') {
     // Ambient Continuous Monotonous Om (Drone)
@@ -347,6 +359,7 @@ function playZenSynth(id, ctx) {
       const osc = ctx.createOscillator();
       const nodeGain = ctx.createGain();
       
+      trackAudioNode(osc);
       osc.type = 'triangle';
       osc.frequency.setValueAtTime(freq, now);
       
@@ -365,7 +378,7 @@ function playZenSynth(id, ctx) {
       osc.stop(now + duration);
     });
 
-    setTimeout(() => stopVisualizerEffects(), duration * 1000);
+    return duration * 1000;
   }
 }
 
@@ -385,6 +398,7 @@ function playFrogRibbit(ctx) {
     const osc = ctx.createOscillator();
     const gainNode = ctx.createGain();
     
+    trackAudioNode(osc);
     osc.type = 'triangle';
     osc.frequency.setValueAtTime(startFreq, startTime);
     osc.frequency.exponentialRampToValueAtTime(endFreq, startTime + duration);
@@ -392,6 +406,7 @@ function playFrogRibbit(ctx) {
     // Vocal cord texture vibrato/LFO modulation
     const lfo = ctx.createOscillator();
     const lfoGain = ctx.createGain();
+    trackAudioNode(lfo);
     lfo.type = 'sawtooth';
     lfo.frequency.setValueAtTime(45, startTime);
     lfoGain.gain.setValueAtTime(120, startTime); // frequency swing width
@@ -418,41 +433,43 @@ function playFrogRibbit(ctx) {
   triggerPulse(now + 0.10, 0.12, 190, 140);   // second croak pulse
 
   startVisualizerEffects();
-  setTimeout(() => {
-    if (!state.isPlaying) stopVisualizerEffects();
-  }, 300);
+  return 280;
 }
 
 /* ==========================================================================
    Sound Playback Manager
    ========================================================================== */
 
-function playActiveSound() {
-  const ctx = getAudioContext();
-  triggerVibration(18);
+function finishPlayback() {
+  state.isPlaying = false;
+  stopVisualizerEffects();
+  updateMediaSessionPlayback('paused');
+}
 
+function scheduleSynthPlaybackEnd(duration, repeatDelay = 0) {
+  state.playbackTimeout = setTimeout(() => {
+    state.playbackTimeout = null;
+    if (state.isPlaying && state.loopEnabled) {
+      state.playbackTimeout = setTimeout(() => {
+        state.playbackTimeout = null;
+        if (state.isPlaying && state.loopEnabled) playActiveSound();
+        else finishPlayback();
+      }, repeatDelay);
+    } else {
+      finishPlayback();
+    }
+  }, duration);
+}
+
+function playActiveSound() {
   const pack = soundLibrary[state.activeTab];
   const soundItem = pack.find(s => s.id === state.activeSoundId);
   if (!soundItem) return;
 
+  stopActiveSound();
+  const ctx = getAudioContext();
+  triggerVibration(18);
   state.isPlaying = true;
-
-  // Clear any existing 2-second fade-out timers
-  if (state.fadeTimeout) {
-    clearTimeout(state.fadeTimeout);
-    state.fadeTimeout = null;
-  }
-  if (state.fadeInterval) {
-    clearInterval(state.fadeInterval);
-    state.fadeInterval = null;
-  }
-
-  // Stop any active HTML5 audio element
-  if (state.activeAudioElement) {
-    state.activeAudioElement.pause();
-    state.activeAudioElement.volume = 1.0;
-    state.activeAudioElement.currentTime = 0;
-  }
 
   // Handle sound types
   if (soundItem.url) {
@@ -464,7 +481,7 @@ function playActiveSound() {
     }
     
     state.activeAudioElement = audio;
-    audio.loop = false; // Managed programmatically to strictly respect 2-second limits
+    audio.loop = false; // Looping restarts after each fade-out.
     audio.volume = 1.0;
     audio.currentTime = 0;
     
@@ -475,8 +492,7 @@ function playActiveSound() {
       })
       .catch(err => {
         console.error('Audio play blocked:', err);
-        stopVisualizerEffects();
-        state.isPlaying = false;
+        stopActiveSound();
       });
 
     // Strict 2-second limit fade-out wrapper
@@ -532,29 +548,13 @@ function playActiveSound() {
     // Synthesized playback (No URL defined)
     if (state.activeTab === 'animals' && soundItem.id === 'frog') {
       // Frog synthesized croaker
-      playFrogRibbit(ctx);
-      
-      const duration = 280; // ms duration of ribbit double-pulse
-      setTimeout(() => {
-        if (!state.loopEnabled) {
-          stopVisualizerEffects();
-          state.isPlaying = false;
-          updateMediaSessionPlayback('paused');
-        } else if (state.isPlaying && state.activeSoundId === 'frog') {
-          // Loop frog sound by playing again after 500ms gap
-          setTimeout(() => {
-            if (state.isPlaying && state.activeSoundId === 'frog' && state.loopEnabled) {
-              playActiveSound();
-            }
-          }, 400);
-        }
-      }, duration);
+      scheduleSynthPlaybackEnd(playFrogRibbit(ctx), 400);
     } 
     else if (state.activeTab === 'synth') {
-      playChiptuneSynth(soundItem.id, ctx);
+      scheduleSynthPlaybackEnd(playChiptuneSynth(soundItem.id, ctx));
     } 
     else if (state.activeTab === 'zen') {
-      playZenSynth(soundItem.id, ctx);
+      scheduleSynthPlaybackEnd(playZenSynth(soundItem.id, ctx));
     }
   }
 
@@ -574,12 +574,21 @@ function stopActiveSound() {
     clearInterval(state.fadeInterval);
     state.fadeInterval = null;
   }
+  if (state.playbackTimeout) {
+    clearTimeout(state.playbackTimeout);
+    state.playbackTimeout = null;
+  }
 
   if (state.activeAudioElement) {
     state.activeAudioElement.pause();
     state.activeAudioElement.volume = 1.0;
     state.activeAudioElement.currentTime = 0;
   }
+  state.activeAudioNodes.forEach(node => {
+    node.stop();
+    node.disconnect();
+  });
+  state.activeAudioNodes.clear();
   updateMediaSessionPlayback('paused');
 }
 
@@ -728,6 +737,7 @@ function renderSoundPackGrid(tabId) {
 }
 
 function switchTab(targetTabId) {
+  stopActiveSound();
   state.activeTab = targetTabId;
   
   // Update Tab Navigation classes
@@ -764,8 +774,7 @@ function switchTab(targetTabId) {
 
 // Big Fidget Button Triggers
 fidgetButton.addEventListener('click', () => {
-  if (state.isPlaying && state.activeTab === 'animals' && state.loopEnabled) {
-    // If looping animals, a press stops it
+  if (state.isPlaying && state.loopEnabled) {
     stopActiveSound();
   } else {
     playActiveSound();
@@ -804,9 +813,6 @@ hapticToggle.addEventListener('change', (e) => {
 
 loopToggle.addEventListener('change', (e) => {
   state.loopEnabled = e.target.checked;
-  if (state.activeAudioElement) {
-    state.activeAudioElement.loop = state.loopEnabled;
-  }
   triggerVibration(15);
 });
 

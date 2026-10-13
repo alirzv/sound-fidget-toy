@@ -1,0 +1,28 @@
+{
+  "name": "sound-fidget-toy",
+  "version": "1.0.0",
+  "description": "SoundClick is a tactile sound fidget progressive web app (PWA). It can be run locally with Python's built-in HTTP server; no packages or build step are required.",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "android:sync": "npx cap sync android",
+    "android:open": "npx cap open android"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alirzv/sound-fidget-toy.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/alirzv/sound-fidget-toy/issues"
+  },
+  "homepage": "https://github.com/alirzv/sound-fidget-toy#readme",
+  "dependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/cli": "^8.5.2",
+    "@capacitor/core": "^8.5.2"
+  }
+}

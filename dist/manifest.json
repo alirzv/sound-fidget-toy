@@ -1,0 +1,24 @@
+{
+  "name": "SoundClick - Tactile Sound Fidget",
+  "short_name": "SoundClick",
+  "description": "A clean, tactile sound fidget toy that plays animal sounds, retro synth sound effects, and relaxing zen tones, featuring mobile lock screen controls.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0d0b1f",
+  "theme_color": "#8b5cf6",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "./assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "./assets/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
